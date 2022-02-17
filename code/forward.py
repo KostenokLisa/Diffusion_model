@@ -57,3 +57,26 @@ def q_sample(x_batch, t, betas, noise):
     alphas_1_m_t = alphas_1_m_t.to(DEVICE)
     alphas_t = alphas_t.to(DEVICE)
     return alphas_t * x_batch + alphas_1_m_t * noise
+
+
+def calc_posterior(betas, alphas, alphas_prod_p, alphas_prod):
+    # estimating posterior distribution parameters based on beta and alpha parameters
+    post_mean_coef_1 = (betas * torch.sqrt(alphas_prod_p) / (1 - alphas_prod))
+    post_mean_coef_2 = ((1 - alphas_prod_p) * torch.sqrt(alphas) / (1 - alphas_prod))
+    post_variance = betas * (1 - alphas_prod_p) / (1 - alphas_prod)
+    post_log_variance = torch.log(torch.cat((post_variance[1].view(1, 1), post_variance[1:].view(-1, 1)), 0))
+    return post_mean_coef_1, post_mean_coef_2, post_log_variance.view(-1)
+
+
+def q_posterior_mean_variance(betas, alphas, alphas_prod_p, alphas_prod, t, x_0, x_t):
+    # estimating posterior distribution parameters at a fixed timestep t
+    post_params = calc_posterior(betas, alphas, alphas_prod_p, alphas_prod)
+    post_mean_coef_1 = post_params[0]
+    post_mean_coef_2 = post_params[1]
+    post_log_variance = post_params[2]
+
+    coef_1 = extract(post_mean_coef_1, t, x_0)
+    coef_2 = extract(post_mean_coef_2, t, x_0)
+    mean = coef_1 * x_0 + coef_2 * x_t
+    var = extract(post_log_variance, t, x_0)
+    return mean, var

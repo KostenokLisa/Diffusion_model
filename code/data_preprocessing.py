@@ -7,6 +7,8 @@ from pathlib import Path
 from sklearn.preprocessing import LabelEncoder
 from torchvision import transforms
 from matplotlib import colors, pyplot as plt
+from numpy.random import normal, multivariate_normal
+from numpy.random import binomial
 
 DATA_MODES = ['train', 'val', 'test']
 # define the size of image
@@ -100,7 +102,7 @@ def imshow(inp, title=None, plt_ax=plt, default=False):
     plt_ax.grid(False)
 
 
-def show_samples(dataset):
+def show_samples_imgs(dataset):
     fig, ax = plt.subplots(nrows=3, ncols=3, figsize=(8, 8), sharey=True, sharex=True)
     for fig_x in ax.flatten():
         sample_id = int(np.random.uniform(0, 300))
@@ -108,3 +110,66 @@ def show_samples(dataset):
         img_label = " ".join(map(lambda x: x.capitalize(),
                                  dataset.label_encoder.inverse_transform([label])[0].split('_')))
         imshow(img.data.cpu(), title=img_label, plt_ax=fig_x)
+
+# dataset consists of vectors sampled from gmm distribution
+def make_gmm_dataset(dataset_size, mean1=None, mean2=None, var1=None, var2=None, p=None):
+    # sampling from 2-dim mixed Gaussian distribution, p - hyperparameter of distribution
+    if mean1 is None:
+        mean1 = [5.0, 5.0]
+    if mean2 is None:
+        mean2 = [-5.0, -5.0]
+    if var1 is None:
+        var1 = [1.0, 1.0]
+    if var2 is None:
+        var2 = [1.0, 1.0]
+    if p is None:
+        p = 0.3
+
+    idx1 = binomial(1, p, dataset_size)
+    idx2 = np.ones(dataset_size) - idx1
+
+    x1 = multivariate_normal(mean1, np.diag(np.sqrt(var1)), dataset_size)
+    x2 = multivariate_normal(mean2, np.diag(np.sqrt(var2)), dataset_size)
+
+    gmm_data = np.diag(idx1) @ x1 + np.diag(idx2) @ x2
+    return torch.from_numpy(gmm_data)
+
+# dataset consists of vectors sampled from funnel distribution
+def make_funnel_dataset(dataset_size, mean=None, scale=None):
+    if mean is None:
+        mean = 0.0
+    if scale is None:
+        scale = 3.0
+    x1 = np.ones(dataset_size)
+    x2 = normal(mean, scale, dataset_size)
+
+    for idx in range(len(x1)):
+        x1[idx] = normal(0, np.exp(x2[idx] / 2), 1)
+
+    x1 = x1[:, np.newaxis]
+    x2 = x2[:, np.newaxis]
+    funnel_data = np.concatenate((x1, x2), axis=1)
+    return torch.from_numpy(funnel_data)
+
+# dataset consists of vectors sampled from banana-shaped distribution
+def make_banana_shaped_dataset(dataset_size, mean=None, var=None):
+    if mean is None:
+        mean = [0, 0]
+    if var is None:
+        var = [[1, 0.95], [0.95, 1]]
+    x = multivariate_normal(mean, np.sqrt(var), dataset_size)
+    y1 = x[:, 0]
+    y2 = x[:, 1] - x[:, 0]**2 - np.ones(dataset_size)
+
+    y1 = y1[:, np.newaxis]
+    y2 = y2[:, np.newaxis]
+    return torch.from_numpy(np.concatenate((y1, y2), axis=1))
+
+
+def show_samples_distr(dataset):
+    plt.figure(figsize=(8, 6))
+    plt.scatter(*dataset.T.cpu(), alpha=0.5, color='red', edgecolor='white', s=40)
+    plt.show()
+
+
+

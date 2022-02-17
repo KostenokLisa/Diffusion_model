@@ -1,10 +1,12 @@
 import data_preprocessing
 import argparse
-from data_preprocessing import CustomDataset, get_files, show_samples
+from data_preprocessing import CustomDataset, get_files, show_samples_imgs
+from data_preprocessing import make_gmm_dataset, make_funnel_dataset, make_banana_shaped_dataset
 from torch.utils.data import DataLoader
 import torch
 import os
 from zipfile import ZipFile
+
 
 parser = argparse.ArgumentParser(description="Dataset modes")
 parser.add_argument("--dataset")  # name of the dataset
@@ -37,4 +39,22 @@ if args.dataset == "dogs":
     assert (len(train_loader) > 0)
     assert (len(test_loader) > 0)
 
-    # show_samples(test_dataset)
+
+else:
+    dataset_size = 1000
+    batch_size = 100
+
+    if args.dataset == "mixGauss":
+        train_dataset = make_gmm_dataset(dataset_size, mean1=None, mean2=None, var1=None, var2=None, p=None)
+    elif args.dataset == "funnel":
+        train_dataset = make_funnel_dataset(dataset_size, mean=None, scale=None)
+    elif args.dataset == "banana-shaped":
+        train_dataset = make_banana_shaped_dataset(dataset_size, mean=None, var=None)
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
+
+    print("Train data", args.dataset, "samples: ", train_dataset[:5])
+    print("Number of train samples: ", len(train_dataset))
+    assert(len(train_loader) > 0)
+
+    # show_samples_imgs(test_dataset)

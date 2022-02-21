@@ -59,7 +59,7 @@ def q_posterior_mean_variance(x_0, x_t, t, param_dict):
     coef_1 = extract(param_dict["posterior_mean_coef_1"], t, x_0)
     coef_2 = extract(param_dict["posterior_mean_coef_2"], t, x_0)
     mean = coef_1 * x_0 + coef_2 * x_t
-    var = extract(param_dict["posterior_log_variance_clipped"], t, x_0)
+    var = extract(param_dict["post_log_variance"], t, x_0)
     return mean, var
 
 

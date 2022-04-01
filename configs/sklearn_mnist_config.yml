@@ -1,0 +1,18 @@
+data_params:
+  dataset_name: MNIST_sklearn
+  train_batch_size: 64
+  val_batch_size: 64
+  test_batch_size: 64
+  input_dimension: 64
+
+
+train_params:
+  hidden_units: 256
+  T: 5
+  beta: 0.9
+  num_epochs: 1000
+  early_stopping: 50
+
+
+opt_params:
+  lr: 1e-3
